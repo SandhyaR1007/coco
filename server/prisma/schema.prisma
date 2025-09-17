@@ -11,5 +11,109 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  bio          String?
+  skills       String[]
+  profileImage String
+
+  //location data
+  locationUrl  String?
+  locationLat  Float?
+  locationLang Float?
+
+  // relationships
+  spaces           Space[]
+  checkIns         CheckIn[]
+  workBuddyPosts   WorkBuddyPost[]
+  sentMessages     Message[]       @relation("MessageSender")
+  receivedMessages Message[]       @relation("MessageReceiver")
+  reveiews         Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Space {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  address     String
+  lat         Float
+  lang        Float
+  amenities   String[]
+  images      String[]
+  isVerified  Boolean  @default(false)
+
+  // pricing 
+  hourlyPrice  Int?
+  dailyPrice   Int?
+  monthlyPrice Int?
+
+  //owner relationship
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  checkIns       CheckIn[]
+  workBuddyPosts WorkBuddyPost[]
+  reviews        Review[]
+}
+
+model CheckIn {
+  id           String    @id @default(cuid())
+  userId       String
+  spaceId      String
+  checkInTime  DateTime  @default(now())
+  checkOutTime DateTime?
+
+  user  User  @relation(fields: [userId], references: [id])
+  space Space @relation(fields: [spaceId], references: [id])
+}
+
+model WorkBuddyPost {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  skillsNeeded String[]
+  duration     String
+  isActive     Boolean  @default(true)
+
+  userId  String
+  user    User    @relation(fields: [userId], references: [id])
+  spaceId String?
+  space   Space?  @relation(fields: [spaceId], references: [id])
+}
+
+model Message {
+  id       String @id @default(cuid())
+  content  String
+  senderId String
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
+
+  receiverId String
+  receiver   User   @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id      String  @id @default(cuid())
+  rating  Int
+  comment String?
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+  spaceId String
+  space   Space  @relation(fields: [spaceId], references: [id])
+
+  @@unique([userId, spaceId])
 }
